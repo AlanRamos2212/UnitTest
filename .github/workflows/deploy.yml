@@ -42,4 +42,12 @@ jobs:
           key: ${{ secrets.EC2_SSH_PRIVATE_KEY }}
           script: |
             set -e
-            curl -fsS -X GET http://127.0.0.1/api/categories || exit 1
+            for i in {1..20}; do
+              if curl -fsS -X GET http://127.0.0.1/api/categories; then
+                exit 0
+              fi
+              echo "Waiting for API..."
+              sleep 2
+            done
+            echo "Health check failed"
+            exit 1
