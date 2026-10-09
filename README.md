@@ -149,3 +149,5 @@ En el Security Group de EC2 agrega reglas TCP personalizadas para los puertos
 `8080` y `6061` desde tu IP. Prueba con
 `http://IP_PUBLICA_EC2:8080/swagger` y conecta al socket con la IP pública y
 puerto `6061`.
+
+Ec2

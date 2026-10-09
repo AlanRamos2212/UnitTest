@@ -1,0 +1,45 @@
+
+name: Deploy to EC2
+
+on:
+  workflow_run:
+    workflows: ["CI/CD Pipeline"]
+    types: [completed]
+
+jobs:
+  deploy-ec2:
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Deploy over SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USERNAME }}
+          key: ${{ secrets.EC2_SSH_PRIVATE_KEY }}
+          script: |
+            set -e
+            docker login -u "${{ secrets.DOCKERHUB_USERNAME }}" -p "${{ secrets.DOCKERHUB_TOKEN }}"
+            docker pull ${{ secrets.DOCKERHUB_USERNAME }}/unit-test-api:latest
+            docker stop unit-test-api || true
+            docker rm -f unit-test-api || true
+            docker run -d \
+              --name unit-test-api \
+              --restart unless-stopped \
+              -p 80:80 \
+              -p 6061:6061 \
+              -v /home/${{ secrets.EC2_USERNAME }}/webapp-data:/app/data \
+              -v /home/${{ secrets.EC2_USERNAME }}/webapp-backups:/app/backups \
+              ${{ secrets.DOCKERHUB_USERNAME }}/unit-test-api:latest
+            docker ps --filter "name=unit-test-api"
+
+      - name: Verify app from EC2
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USERNAME }}
+          key: ${{ secrets.EC2_SSH_PRIVATE_KEY }}
+          script: |
+            set -e
+            curl -fsS http://127.0.0.1/api/categories || exit 1
