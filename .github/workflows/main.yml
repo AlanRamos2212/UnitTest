@@ -1,0 +1,101 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  build-test:
+    name: Build and test
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup .NET SDK
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Restore dependencies
+        run: dotnet restore WebAppApi.csproj
+
+      - name: Run tests with coverage
+        run: |
+          dotnet test WebAppApi.csproj \
+            --collect:"XPlat Code Coverage" \
+            --logger "trx;LogFileName=test-results.trx" \
+            /p:CollectCoverage=true \
+            /p:CoverletOutputFormat=cobertura \
+            /p:Threshold=70 \
+            /p:ThresholdType=line \
+            /p:ThresholdStat=total
+
+      - name: Build application
+        run: dotnet build WebAppApi.csproj --configuration Release --no-restore
+
+  docker-publish:
+    name: Publish Docker image
+    needs: build-test
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Set image metadata
+        id: meta
+        run: |
+          echo "image_name=${{ secrets.DOCKERHUB_USERNAME }}/unit-test-api" >> $GITHUB_OUTPUT
+          echo "tag_latest=${{ secrets.DOCKERHUB_USERNAME }}/unit-test-api:latest" >> $GITHUB_OUTPUT
+          echo "tag_sha=${{ secrets.DOCKERHUB_USERNAME }}/unit-test-api:${{ github.sha }}" >> $GITHUB_OUTPUT
+
+      - name: Build Docker image
+        run: |
+          docker build -t ${{ steps.meta.outputs.tag_latest }} -t ${{ steps.meta.outputs.tag_sha }} .
+
+      - name: Push Docker image
+        run: |
+          docker push ${{ steps.meta.outputs.tag_latest }}
+          docker push ${{ steps.meta.outputs.tag_sha }}
+
+  deploy-ec2:
+    name: Deploy to EC2
+    needs: docker-publish
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Deploy over SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USERNAME }}
+          key: ${{ secrets.EC2_SSH_PRIVATE_KEY }}
+          script: |
+            set -e
+            docker login -u "${{ secrets.DOCKERHUB_USERNAME }}" -p "${{ secrets.DOCKERHUB_TOKEN }}"
+            docker pull ${{ secrets.DOCKERHUB_USERNAME }}/unit-test-api:latest
+            docker stop unit-test-api || true
+            docker rm unit-test-api || true
+            docker run -d \
+              --name unit-test-api \
+              -p 80:80 \
+              -p 6061:6061 \
+              -v /home/${{ secrets.EC2_USERNAME }}/webapp-data:/app/data \
+              -v /home/${{ secrets.EC2_USERNAME }}/webapp-backups:/app/backups \
+              ${{ secrets.DOCKERHUB_USERNAME }}/unit-test-api:latest
+            docker ps --filter "name=unit-test-api"
+
+      - name: Verify application health
+        run: |
+          curl -fsS http://${{ secrets.EC2_HOST }}/api/categories || exit 1
