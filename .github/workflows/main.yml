@@ -21,12 +21,13 @@ jobs:
           dotnet-version: '8.0.x'
 
       - name: Restore dependencies
-        run: dotnet restore WebAppApi.csproj
+        run: dotnet restore tests/WebAppApi.Tests/WebAppApi.Tests.csproj
 
       - name: Run tests with coverage
         run: |
-          dotnet test WebAppApi.csproj \
-            --collect:"XPlat Code Coverage" \
+          dotnet test tests/WebAppApi.Tests/WebAppApi.Tests.csproj \
+            --configuration Release \
+            --no-restore \
             --logger "trx;LogFileName=test-results.trx" \
             /p:CollectCoverage=true \
             /p:CoverletOutputFormat=cobertura \
@@ -68,4 +69,3 @@ jobs:
         run: |
           docker push ${{ steps.meta.outputs.tag_latest }}
           docker push ${{ steps.meta.outputs.tag_sha }}
-
