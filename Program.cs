@@ -30,7 +30,7 @@ app.MapGet("/health", async (AppDbContext db, ILogger<Program> logger) =>
     try
     {
         if (await db.Database.CanConnectAsync())
-            return Results.Ok(new { status = "Healthy", database = "Healthy" });
+            return Results.Ok(new { status = "Healthy2", database = "Healthy" });
     }
     catch (Exception exception)
     {
