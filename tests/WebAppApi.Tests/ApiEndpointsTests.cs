@@ -16,7 +16,7 @@ public sealed class ApiEndpointsTests(ApiFactory factory) : IClassFixture<ApiFac
         using var body = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-        Assert.Equal("Healthy", body.RootElement.GetProperty("status").GetString());
+        Assert.Equal("Healthy2", body.RootElement.GetProperty("status").GetString());
         Assert.Equal("Healthy", body.RootElement.GetProperty("database").GetString());
     }
 
