@@ -43,7 +43,7 @@ jobs:
           script: |
             set -e
             for i in {1..20}; do
-              if curl -fsS -X GET http://127.0.0.1/api/categories; then
+              if curl -fsS -X GET http://127.0.0.1/health; then
                 exit 0
               fi
               echo "Waiting for API..."

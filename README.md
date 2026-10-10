@@ -1,20 +1,21 @@
 # WebAppApi
 
-API REST ASP.NET Core 8 con SQLite, Docker y 11 endpoints, más un servidor TCP en el puerto `6061`.
+API REST ASP.NET Core 8 con SQLite, Docker y 12 endpoints, más un servidor TCP en el puerto `6061`.
 
 ## Endpoints
 
-1. `GET /api/categories` - listar categorías
-2. `POST /api/categories` - crear categoría
-3. `DELETE /api/categories/{id}` - eliminar categoría sin productos asociados
-4. `GET /api/products` - listar productos
-5. `POST /api/products` - crear producto
-6. `GET /api/products/{id}` - consultar producto
-7. `PUT /api/products/{id}` - actualizar producto
-8. `DELETE /api/products/{id}` - eliminar producto
-9. `POST /api/database/backup` - guardar una copia en `backups/`
-10. `GET /api/database/backup/download` - descargar la base SQLite como archivo `.db`
-11. `DELETE /api/database` - vaciar productos y categorías
+1. `GET /health` - estado de la API y conectividad con SQLite (`200` saludable, `503` no saludable)
+2. `GET /api/categories` - listar categorías
+3. `POST /api/categories` - crear categoría
+4. `DELETE /api/categories/{id}` - eliminar categoría sin productos asociados
+5. `GET /api/products` - listar productos
+6. `POST /api/products` - crear producto
+7. `GET /api/products/{id}` - consultar producto
+8. `PUT /api/products/{id}` - actualizar producto
+9. `DELETE /api/products/{id}` - eliminar producto
+10. `POST /api/database/backup` - guardar una copia en `backups/`
+11. `GET /api/database/backup/download` - descargar la base SQLite como archivo `.db`
+12. `DELETE /api/database` - vaciar productos y categorías
 
 Las respuestas tienen esta forma:
 

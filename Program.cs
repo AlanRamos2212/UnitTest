@@ -25,6 +25,21 @@ app.UseSwagger();
 app.UseSwaggerUI();
 app.UseCors("all");
 
+app.MapGet("/health", async (AppDbContext db, ILogger<Program> logger) =>
+{
+    try
+    {
+        if (await db.Database.CanConnectAsync())
+            return Results.Ok(new { status = "Healthy", database = "Healthy" });
+    }
+    catch (Exception exception)
+    {
+        logger.LogWarning(exception, "Health check failed while checking the database.");
+    }
+
+    return Results.Json(new { status = "Unhealthy", database = "Unhealthy" }, statusCode: 503);
+});
+
 app.MapGet("/api/categories", async (AppDbContext db) =>
     Results.Ok(ApiResponse<List<Category>>.Success(await db.Categories.AsNoTracking().ToListAsync())));
 

@@ -10,6 +10,17 @@ public sealed class ApiEndpointsTests(ApiFactory factory) : IClassFixture<ApiFac
     private readonly HttpClient client = factory.CreateClient();
 
     [Fact]
+    public async Task GetHealth_WhenDatabaseIsAvailable_ReturnsHealthy()
+    {
+        var response = await client.GetAsync("/health");
+        using var body = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.Equal("Healthy", body.RootElement.GetProperty("status").GetString());
+        Assert.Equal("Healthy", body.RootElement.GetProperty("database").GetString());
+    }
+
+    [Fact]
     public async Task GetCategories_Empty_Returns200()
     {
         await factory.ResetDatabaseAsync();
